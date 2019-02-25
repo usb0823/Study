@@ -58,7 +58,9 @@ public class Hello2 {
 		pw.println("特有功能：自动换行和自动刷新");
 		pw.println("利用构造器设置自动刷新");
 		pw.close();
-
+ 
+		System.out.println("test github");
+		
 		
 //		Object object = new Object();
 //		
