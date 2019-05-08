@@ -5,9 +5,30 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import com.zhy.testmore.retrofit.API;
+import com.zhy.testmore.retrofit.RxWeatherService;
+import com.zhy.testmore.retrofit.WeatherEntity;
+import com.zhy.testmore.retrofit.WeatherService;
+
+
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -26,6 +47,9 @@ public class MainActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
+        doRequestByRetrofit();
+
+        doRequestByRxRetrofit();
     }
 
     @Override
@@ -48,5 +72,68 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * 单纯使用Retrofit的联网请求
+     * （http://wthrcdn.etouch.cn/weather_mini?city=南京）
+     */
+    private void doRequestByRetrofit() {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(API.BASE_URL)//基础URL 建议以 / 结尾
+                .addConverterFactory(GsonConverterFactory.create())//设置 Json 转换器
+                .build();
+        WeatherService weatherService = retrofit.create(WeatherService.class);
+        Call<WeatherEntity> call = weatherService.getMessage("南京");
+        call.enqueue(new Callback<WeatherEntity>() {
+            @Override
+            public void onResponse(Call<WeatherEntity> call, Response<WeatherEntity> response) {
+                //测试数据返回
+                WeatherEntity weatherEntity = response.body();
+
+                Log.e("TAG", "response == " + response.body().toString());
+                Log.e("TAG", "response == " + weatherEntity.getData().getGanmao());
+            }
+
+            @Override
+            public void onFailure(Call<WeatherEntity> call, Throwable t) {
+                Log.e("TAG", "Throwable : " + t);
+            }
+        });
+    }
+
+    private void doRequestByRxRetrofit() {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(API.BASE_URL)//基础URL 建议以 / 结尾
+                .addConverterFactory(GsonConverterFactory.create())//设置 Json 转换器
+                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())//RxJava 适配器
+                .build();
+        RxWeatherService rxjavaService = retrofit.create(RxWeatherService.class);
+        rxjavaService.getMessage("南京")
+                .subscribeOn(Schedulers.io())//IO线程加载数据
+                .observeOn(AndroidSchedulers.mainThread())//主线程显示数据
+                .subscribe(new Observer<WeatherEntity>() {
+
+
+                    @Override
+                    public void onSubscribe(Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onNext(WeatherEntity weatherEntity) {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
     }
 }
